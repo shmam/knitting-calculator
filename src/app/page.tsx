@@ -1,95 +1,204 @@
-import Image from "next/image";
+"use client";
+import { useState, useEffect } from "react";
 import styles from "./page.module.css";
+import { saveData, loadData } from "./userDataService";
+import type { RowData, SectionData, SessionData } from "./types";
+import Help from "./help";
+import Section from "./Section";
+import Image from 'next/image';
 
 export default function Home() {
+  const sectionOptions = [0, 1, 2, 3, 4, 5];
+  const [displayHelp, setDisplayHelp] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [sections, setSections] = useState<Array<SectionData>>(Array(4).fill({
+    count: 0, 
+    increment: 0
+  }));
+  const [rowCount, setRowCount] = useState(0);
+  const [pastRows, setPastRows] = useState<Array<RowData>>([])
+
+  // attempt to load user data on inital load
+  useEffect(() => {
+    setIsLoading(true)
+    const fetchedLocalStoreData: SessionData = loadData()
+
+    if (fetchedLocalStoreData === null || Object.keys(fetchedLocalStoreData).length === 0) {
+      console.log("failed to load user data")
+    } else {
+      setSections(fetchedLocalStoreData.sections)
+      setRowCount(fetchedLocalStoreData.rowCount)
+      setPastRows(fetchedLocalStoreData.rows)
+    }
+    setIsLoading(false)
+  }, [])
+
+  function saveAllSessionData() {
+    // save all session data
+    saveData({
+      rowCount,
+      sections,
+      rows: pastRows
+    })
+  }
+
+  function onValueChange(sectionIdx: number, count: number, increment: number) {
+    sections[sectionIdx] = {
+      count, 
+      increment
+    }
+    console.debug(sections)
+    setSections(sections)
+    try {
+      setIsLoading(true)
+      saveAllSessionData()
+    } catch(e) {
+      // handle errors
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  function onSectionChange(e: any) {
+    const targetLength = Number(e.target.value)
+    let newSection = new Array<SectionData>;
+
+    // if we have to add new sections
+    if (targetLength > sections.length) {     
+      const del = targetLength - sections.length  
+      newSection = sections.concat(Array(del).fill({
+        count: 0, 
+        increment: 0
+      }))
+
+    // if we have to remove a section
+    } else if (targetLength < sections.length) {
+      newSection = sections.slice(0,targetLength)
+    }
+    setSections(newSection)
+    saveAllSessionData()
+  }
+
+  function rowWithIncrement() {
+    sections.forEach((section) => {
+      section.count += section.increment;
+    });
+    setSections(sections);
+    setRowCount(rowCount + 1);
+    const newRow: RowData = {
+      index: rowCount + 1,
+      values: sections.flatMap((s) => s.count)
+    }
+    setPastRows([newRow].concat(pastRows))
+    saveAllSessionData();
+  }
+
+  function rowWithoutIncrement() {
+    setRowCount(rowCount + 1);
+    const newRow: RowData = {
+      index: rowCount + 1,
+      values: sections.flatMap((s) => s.count)
+    }
+    setPastRows([newRow].concat(pastRows))
+    saveAllSessionData();
+  }
+
+  function reset() {
+    let length = sections.length
+    setSections(new Array(length).fill({
+      count: 0,
+      increment: 0
+    }))
+    setRowCount(0)
+    setPastRows([])
+    saveAllSessionData()
+  }
+
   return (
     <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      <div className={styles.titleSection}>
+        <h1>🧶 grace&apos;s knitting calculator</h1>
+        <button onClick={() => {setDisplayHelp(!displayHelp);}}>help?</button>
+      </div>
+      
+      {displayHelp && <Help />}
+
+      <div>
+        {/* dropdown to select number of sections */}
+        <div className={styles.config}>
+          <label htmlFor="sectionCount">select number of sections: </label>
+          <select
+            id="sectionCount"
+            value={sections.length}
+            onChange={onSectionChange}
           >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
+            {sectionOptions.map((num) => (
+              <option key={num} value={num}>
+                {num}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        {/* row counter */}
+        <p>row count: <strong>{rowCount}</strong></p>
+
+        <div className={styles.sectionLayout}>
+          {sections.map((obj, index) => (
+            <Section 
+              key={index}
+              idx={index}
+              initialCount={obj.count}
+              initialIncr={obj.increment}
+              onChange={onValueChange}
             />
-          </a>
+          ))}
+        </div>
+        {isLoading ? <p>loading...</p> : <></>}
+
+        <div className={styles.buttonRow}>
+          <div className={styles.actionButtonRow}>
+            <button onClick={rowWithoutIncrement}>wrong side ⬅️ </button>
+            <button onClick={rowWithIncrement}>right side ➡️ </button>
+          </div>
+          <button onClick={reset}>reset all data</button>
         </div>
       </div>
 
-      <div className={styles.center}>
+      <Row
+        rows={pastRows}
+      />
+        
+
+      <footer>
         <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
           priority
+          src="/github-mark.svg"
+          height={16}
+          width={16}
+          alt="github logo"
         />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+        <a href="https://github.com/shmam/knitting-calculator">github</a>
+        <a href="mailto:samuel.d.crochet@gmail.com">notes?</a>
+      </footer>
     </main>
   );
+}
+
+function Row({rows = []}: {rows: RowData[]}) {
+  const [isDisplayRows, setIsDisplayRows] = useState(true)
+
+  return(
+    <div className={styles.rowSection}>
+       <label>display rows?</label>
+       <input type="checkbox" checked={isDisplayRows} onChange={() => setIsDisplayRows(!isDisplayRows)}></input>
+       {isDisplayRows ? rows.map((obj, index) => (
+        <div className={styles.row} key={index}>
+          <p>{obj.index}</p>
+          <p>{obj.values.join(',')}</p>
+        </div>
+       )) : <></>}
+    </div>
+  );
+
 }
