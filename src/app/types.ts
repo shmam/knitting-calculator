@@ -1,6 +1,7 @@
 export type SectionData = {
   count: number;
   increment: number;
+  changeEvery: number;
 };
 
 export type RowData = {

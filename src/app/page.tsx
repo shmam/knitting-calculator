@@ -42,10 +42,11 @@ export default function Home() {
     })
   }
 
-  function onValueChange(sectionIdx: number, count: number, increment: number) {
+  function onValueChange(sectionIdx: number, count: number, increment: number, changeEvery: number) {
     sections[sectionIdx] = {
       count, 
-      increment
+      increment,
+      changeEvery
     }
     console.debug(sections)
     setSections(sections)
@@ -81,19 +82,12 @@ export default function Home() {
 
   function rowWithIncrement() {
     sections.forEach((section) => {
-      section.count += section.increment;
+      if (rowCount % section.changeEvery === 0) {
+        section.count += section.increment;
+      }
     });
-    setSections(sections);
-    setRowCount(rowCount + 1);
-    const newRow: RowData = {
-      index: rowCount + 1,
-      values: sections.flatMap((s) => s.count)
-    }
-    setPastRows([newRow].concat(pastRows))
-    saveAllSessionData();
-  }
 
-  function rowWithoutIncrement() {
+    setSections(sections);
     setRowCount(rowCount + 1);
     const newRow: RowData = {
       index: rowCount + 1,
@@ -107,7 +101,8 @@ export default function Home() {
     let length = sections.length
     setSections(new Array(length).fill({
       count: 0,
-      increment: 0
+      increment: 0,
+      changeEvery: 1
     }))
     setRowCount(0)
     setPastRows([])
@@ -139,7 +134,7 @@ export default function Home() {
             ))}
           </select>
         </div>
-        
+
         {/* row counter */}
         <p>row count: <strong>{rowCount}</strong></p>
 
@@ -150,6 +145,7 @@ export default function Home() {
               idx={index}
               initialCount={obj.count}
               initialIncr={obj.increment}
+              initalChangeEvery={obj.changeEvery}
               onChange={onValueChange}
             />
           ))}
@@ -158,8 +154,7 @@ export default function Home() {
 
         <div className={styles.buttonRow}>
           <div className={styles.actionButtonRow}>
-            <button onClick={rowWithoutIncrement}>wrong side ⬅️ </button>
-            <button onClick={rowWithIncrement}>right side ➡️ </button>
+            <button onClick={rowWithIncrement}>add row ✨</button>
           </div>
           <button onClick={reset}>reset all data</button>
         </div>

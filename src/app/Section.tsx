@@ -5,16 +5,19 @@ export default function Section({
   idx,
   initialCount = 0,
   initialIncr = 0,
+  initalChangeEvery = 1,
   onChange,
 }: {
   idx: number;
   initialCount?: number;
   initialIncr?: number;
-  onChange: (sectionIdx: number, count: number, increment: number) => void;
+  initalChangeEvery?: number;
+  onChange: (sectionIdx: number, count: number, increment: number, changeEvery: number) => void;
 }) {
   const [count, setCount] = useState(initialCount);
   const [increment, setIncrement] = useState(initialIncr);
   const [isEditingCount, setIsEditingCount] = useState(false);
+  const [changeEvery, setChangeEvery] = useState(initalChangeEvery);
 
   const handleEdit = () => {
     setIsEditingCount(!isEditingCount);
@@ -23,16 +26,27 @@ export default function Section({
   useEffect(() => {
     setCount(initialCount);
     setIncrement(initialIncr);
-  }, [initialCount, initialIncr]);
+    setChangeEvery(initalChangeEvery);
+  }, [initialCount, initialIncr, initalChangeEvery]);
 
   useEffect(() => {
     console.log("saving data");
-    onChange(idx, count, increment);
+    onChange(idx, count, increment, changeEvery);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [count, increment, isEditingCount]);
 
   return (
     <div className={styles.section}>
+      <label>change every:</label>
+      <br/>
+      <input
+        className={styles.changeEvery}
+        type="number"
+        value={changeEvery}
+        onChange={(e) => setChangeEvery(parseInt(e.target.value))}
+      />
+      <label> rows</label>
+
       {isEditingCount ? (
         <div>
           <input
@@ -48,7 +62,7 @@ export default function Section({
           {count}
         </p>
       )}
-      <p className={styles.sectionIncrementLabel}>increments by</p>
+      <p className={styles.sectionIncrementLabel}>increments of</p>
       <button onClick={() => setIncrement(increment - 1)}>-</button>
       <input
         className={styles.sectionIncrementInput}
