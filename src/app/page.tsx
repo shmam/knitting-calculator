@@ -23,6 +23,8 @@ export default function Home() {
     setIsLoading(true)
     const fetchedLocalStoreData: SessionData = loadData()
 
+    console.log(fetchedLocalStoreData)
+
     if (fetchedLocalStoreData === null || Object.keys(fetchedLocalStoreData).length === 0) {
       console.log("failed to load user data")
     } else {

@@ -4,7 +4,7 @@ import styles from "./page.module.css";
 export default function Section({
   idx,
   initialCount = 0,
-  initialIncr = 0,
+  initialIncr = 1,
   initalChangeEvery = 1,
   onChange,
 }: {
